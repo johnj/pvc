@@ -6,5 +6,3 @@ license 'BSD, Version 2.0'
 summary 'puppetmaster status monitor for PVC'
 description 'pvc puppetmaster status monitor'
 project_page 'https://github.com/johnj/pvc'
-
-dependency 'puppetlabs/xinetd', '>= 1.3.0'

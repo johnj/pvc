@@ -2,12 +2,15 @@
 # derived from https://github.com/reidmorrison/hyperic-passenger/blob/master/passenger-plugin.xml, modified for pvc
 
 require 'optparse'
+require 'uri'
+require 'net/http'
 require 'rexml/document'
+require 'json'
 include REXML
 require 'open3'
 include Open3
 
-options = { :rack_app_path => ARGV.count > 0 ? ARGV[0] : ''}
+options = { :rack_app_path => '<%= @puppet_rack_path %>' }
 
 if options[:rack_app_path].empty?
   puts "Missing required command line arguments: #{$0} puppet_rack_app_path"
@@ -53,5 +56,17 @@ if xml =~ /<?xml/
   passenger_status[:'application_real_memory'] = XPath.first(rx, "sum(//process[command = 'Passenger RackApp: #{options[:rack_app_path]}']/real_memory)") || ''
   passenger_status[:'application_vmsize'] = XPath.first(rx, "sum(//process[command = 'Passenger RackApp: #{options[:rack_app_path]}']/vmsize)") || ''
   passenger_status[:'system_load5'] = Open3.capture3(ENV, "cat /proc/loadavg | awk '{ print $1 }'")[0].try(:to_f) || ''
+  passenger_status[:'fqdn'] = RbConfig::CONFIG['host_os'] =~ /linux/ ? `hostname -f`.strip : `hostname`
+  begin
+    uri = URI.parse('<%= @pvc_ppm_endpoint %>')
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.read_timeout = <%= @pvc_timeout %>
+    request = Net::HTTP::Post.new(uri.path)
+    request.body = passenger_status.to_json
+    response = http.request(request)
+  rescue
+    puts $!, $@
+    exit 1
+  end
 end
-passenger_status.sort.each {|key,val| puts "#{key}=#{val}"}
+exit 0

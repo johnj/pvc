@@ -4,49 +4,39 @@
 #
 # === Parameters
 #
-# [*puppet_rack_path*]
-#   puppetmasterd rack app location.
-#   Default value is "/usr/share/puppet/rack/puppetmasterd"
-#
-# [*bind_port*]
-#   Port on which pvc status requests should listen for connections.
-#   Default value is 8139
-#
-# [*bind_ip*]
-#   IP on which pvc status requests should listen for connections.
-#   Default value is 0.0.0.0 which is "all interfaces"
+# [*pvc_ppm_endpoint*]
+#   The pvc PPM stats/registration endpoint (usually http://pvc/ppm)
 #
 # [*ruby*]
 #   Fully qualified rath to your ruby executable.
-#   Default value is /usr/bin/ruby
+#   Defaults to /usr/bin/ruby
+#
+# [*puppet_rack_path*]
+#   Full path to your puppetmasterd rack installation
+#   Defaults to /usr/share/puppet/rack/puppetmasterd
 #
 # === Variables
 #
 # === Examples
 #
-#  class { pvc: }
+#  class { pvc: pvc_health_endpoint => 'http://jj.e.com./ppm' }
 #
 # === Authors
 #
 # John Jawed <jj@x.com>
 #
-class pvc ($puppet_rack_path='/usr/share/puppet/rack/puppetmasterd', $bind_port='8139', $ruby='/usr/bin/ruby', $bind_ip='0.0.0.0') {
+class pvc ($pvc_ppm_endpoint, $ruby='/usr/bin/ruby', $puppet_rack_path='/usr/share/puppet/rack/puppetmasterd', $pvc_timeout=5, $pvc_report_interval=5) {
 
-   file {'/var/lib/puppet/status.rb':
-      ensure => file,
-      source => "puppet:///modules/${module_name}/status.rb",
-      mode   => 0555,
+   file { '/var/lib/puppet/status.rb':
+      ensure   => file,
+      content  => template("${module_name}/status.rb.erb"),
+      mode     => 0555,
    }
    ->
-   xinetd::service { 'pvc':
-     bind        => $bind_ip,
-     port        => $bind_port,
-     server      => $ruby,
-     server_args => "/var/lib/puppet/status.rb ${puppet_rack_path}",
-     socket_type => 'stream',
-     protocol    => 'tcp',
-     flags       => 'IPv4',
-     wait        => 'no',
+   cron { pvc:
+      command     => "${ruby} /var/lib/puppet/status.rb",
+      user        => root,
+      minute      => '*',
+      environment => 'PATH=/bin:/usr/bin:/usr/sbin:/usr/local/bin',
    }
-
 }
