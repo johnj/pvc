@@ -18,7 +18,8 @@ class pvc::agent {
 
   $pvcagent = '/usr/local/bin/pvc.sh'
   $pidfile = '/var/run/pvc.pid'
-  $stop = "/bin/kill `/bin/cat ${pidfile}`"
+  # subshells need the signal too 
+  $stop = "/usr/bin/pkill -f ${pvcagent}"
   $start = "/usr/bin/nohup ${pvcagent} 2>&1 >> /var/log/pvc.log &"
 
   file { '/etc/pvc.conf':

@@ -116,6 +116,7 @@ while [ 1 ]; do
   source $PVC_CONF
   : ${PVC_PUPPET_MASTER:=''}
   (
+    trap "exit 130" SIGHUP SIGINT SIGTERM
     url="${host_endpoint}/${fqdn}"
     r=`$http $http_opts $url`
     eval $r
