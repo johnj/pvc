@@ -16,15 +16,30 @@
 #
 class pvc::agent {
 
-   file { '/usr/local/bin/pvc.sh':
-      ensure   => file,
-      source   => "puppet:///modules/${module_name}/pvc.sh",
-      mode     => 0555,
-   }
-   ->
-   file { '/etc/pvc.conf':
-      ensure   => file,
-      content  => template("${module_name}/pvc.conf.erb"),
-      mode     => 0555,
-   }
+  $pvcagent = '/usr/local/bin/pvc.sh'
+  $pidfile = '/var/run/pvc.pid'
+  $stop = "/bin/kill `/bin/cat ${pidfile}`"
+  $start = "/usr/bin/nohup ${pvcagent} 2>&1 >> /var/log/pvc.log &"
+
+  file { '/etc/pvc.conf':
+     ensure   => file,
+     content  => template("${module_name}/pvc.conf.erb"),
+     mode     => 0555,
+  }
+  ->
+  file { $pvcagent:
+     ensure   => file,
+     source   => "puppet:///modules/${module_name}/pvc.sh",
+     mode     => 0555,
+  }
+  ~>
+  service { 'pvcagent':
+    provider   => base,
+    ensure     => 'running',
+    start      => $start,
+    stop       => $stop,
+    hasrestart => true,
+    status     => "/bin/ps -Fp `/bin/cat ${pidfile}` | /bin/grep ${pvcagent}",
+  }
+
 }

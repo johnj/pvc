@@ -1,24 +1,32 @@
 #!/usr/bin/env bash
+# to be run on all agent hosts
+
+PIDFILE='/var/run/pvc.pid'
+
+if [ -e ${PIDFILE} ]; then
+  rm -rf ${PIDFILE}
+fi
+echo $$ > ${PIDFILE}
 
 info() {
   if [ $info -gt 0 ]; then
-    echo $1
+    date +"[%m-%d-%Y %R:%S] [$FUNCNAME] $1"
   fi
 }
 
 fatal() {
-  echo $1
+  date +"[%m-%d-%Y %R:%S] [$FUNCNAME] $1, exiting..."
   exit $2
 }
 
 warn() {
   if [ $warnings -gt 0 ]; then
-    echo $1
+    date +"[%m-%d-%Y %R:%S] [$FUNCNAME] $1"
   fi
 }
 
 error() {
-  echo $1
+  date +"[%m-%d-%Y %R:%S] [$FUNCNAME] $1"
 }
 
 http_dependency() {
@@ -102,7 +110,7 @@ fi
 # only pvc should be allowed to run puppet agent.
 puppet agent --disable && info "Disabled puppet agent runs"
 
-trap "echo ; puppet agent --enable && echo 'Re-enabled normal puppet runs, exiting pvc.' ; exit 130 ;" SIGHUP SIGINT SIGTERM
+trap "echo ; puppet agent --enable && warn 'Caught signal, re-enabled normal puppet runs, exiting pvc.' ; rm ${PIDFILE} ; exit 130 ;" SIGHUP SIGINT SIGTERM
 
 while [ 1 ]; do
   source $PVC_CONF
@@ -111,15 +119,17 @@ while [ 1 ]; do
     url="${host_endpoint}/${fqdn}"
     r=`$http $http_opts $url`
     eval $r
-    if [ ${PVC_RETURN} -ne 0 ]; then
-      error "Host info request (${url}) failed with return code: ${PVC_RETURN}, will keep trying."
+    : ${PVC_CHECK_INTERVAL:=5}
+    if [[ "${PVC_RETURN}" != "0" ]]; then
+      error "Host info request (${url}) failed with an empty or bad return code: ${PVC_RETURN}, will try again in ${PVC_CHECK_INTERVAL}."
+      sleep ${PVC_CHECK_INTERVAL}
+      exit 1
     fi
-    if [ ${PVC_RUN} -ne 0 ]; then
+    if [[ "${PVC_RUN}" != "0" ]]; then
       run_puppet false
-    elif [ ${PVC_FACT_RUN} -ne 0 ]; then
+    elif [[ "${PVC_FACT_RUN}" != "0" ]]; then
       run_facts
     fi
-    : ${PVC_CHECK_INTERVAL:=5}
     if [ -n "${PVC_FILES_MONITORED}" ]; then
       r=$(inotify $PVC_CHECK_INTERVAL)
       if [ -n "${r}" ]; then
