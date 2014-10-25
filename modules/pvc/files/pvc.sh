@@ -63,7 +63,7 @@ run_puppet() {
     info "setting puppet server to ${PVC_PUPPET_MASTER}"
   fi
   $puppet_run $opts 2>&1 | base64 > ${outfile}
-  url="${report_endpoint}?h=${fqdn}"
+  url="${report_endpoint}/${fqdn}"
   o=`$(http_post_file ${outfile}) ${url}`
   info "output of sending puppetrun output='${o}'"
   run_facts
@@ -72,7 +72,7 @@ run_puppet() {
 run_facts() {
   outfile='/var/tmp/pvc.tmp'
   facter -pj 2>&1 | base64 >> ${outfile}
-  url="${facts_endpoint}?h=${fqdn}"
+  url="${facts_endpoint}/${fqdn}"
   o=`$(http_post_file ${outfile}) ${url}`
   info "output of sending facts='${o}'"
 }
@@ -108,7 +108,7 @@ while [ 1 ]; do
   source $PVC_CONF
   : ${PVC_PUPPET_MASTER:=''}
   (
-    url="${host_endpoint}?h=${fqdn}"
+    url="${host_endpoint}/${fqdn}"
     r=`$http $http_opts $url`
     eval $r
     if [ ${PVC_RETURN} -ne 0 ]; then

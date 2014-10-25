@@ -1,5 +1,0 @@
-host_endpoint=http://jj.e.com./host
-report_endpoint=http://jj.e.com./report
-facts_endpoint=http://jj.e.com./facts
-info=1
-warnings=1

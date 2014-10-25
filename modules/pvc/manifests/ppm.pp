@@ -4,9 +4,6 @@
 #
 # === Parameters
 #
-# [*pvc_ppm_endpoint*]
-#   The pvc PPM stats/registration endpoint (usually http://pvc/ppm)
-#
 # [*ruby*]
 #   Fully qualified rath to your ruby executable.
 #   Defaults to /usr/bin/ruby
@@ -19,13 +16,13 @@
 #
 # === Examples
 #
-#  class { pvc: pvc_health_endpoint => 'http://jj.e.com./ppm' }
+#  class { pvc:: pvc_url => 'http://jj.e.com./host' } class { pvc::agent: }
 #
 # === Authors
 #
 # John Jawed <jj@x.com>
 #
-class pvc ($pvc_ppm_endpoint, $ruby='/usr/bin/ruby', $puppet_rack_path='/usr/share/puppet/rack/puppetmasterd', $pvc_timeout=5, $pvc_report_interval=5) {
+class pvc::ppm ($ruby='/usr/bin/ruby', $puppet_rack_path='/usr/share/puppet/rack/puppetmasterd', $pvc_timeout=5) {
 
    file { '/var/lib/puppet/status.rb':
       ensure   => file,

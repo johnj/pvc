@@ -55,10 +55,12 @@ if xml =~ /<?xml/
   passenger_status[:'application_processed'] = XPath.first(rx, "sum(//process[command = 'Passenger RackApp: #{options[:rack_app_path]}']/processed)").try(:to_i) || ''
   passenger_status[:'application_real_memory'] = XPath.first(rx, "sum(//process[command = 'Passenger RackApp: #{options[:rack_app_path]}']/real_memory)") || ''
   passenger_status[:'application_vmsize'] = XPath.first(rx, "sum(//process[command = 'Passenger RackApp: #{options[:rack_app_path]}']/vmsize)") || ''
-  passenger_status[:'system_load5'] = Open3.capture3(ENV, "cat /proc/loadavg | awk '{ print $1 }'")[0].try(:to_f) || ''
+  passenger_status.each {|key,val| passenger_status[key] = val.to_i}
+  passenger_status[:'system_load'] = Open3.capture3(ENV, "cat /proc/loadavg | awk '{ print $1 }'")[0].try(:to_f) || ''
+  passenger_status[:'cpus'] = `cat /proc/cpuinfo | grep processor | wc -l`.to_i
   passenger_status[:'fqdn'] = RbConfig::CONFIG['host_os'] =~ /linux/ ? `hostname -f`.strip : `hostname`
   begin
-    uri = URI.parse('<%= @pvc_ppm_endpoint %>')
+    uri = URI.parse('<%= scope.lookupvar('pvc::pvc_url') %>/ppm')
     http = Net::HTTP.new(uri.host, uri.port)
     http.read_timeout = <%= @pvc_timeout %>
     request = Net::HTTP::Post.new(uri.path)
