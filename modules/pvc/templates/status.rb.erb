@@ -28,6 +28,8 @@ end
 passenger_status = {}
 passenger_status[:passenger_active] = 0
 
+xml = xml[/\<\?xml.+/m]
+
 # borrowing try from ActiveSupport
 class Object
   def try(*a, &b)
@@ -49,12 +51,12 @@ if xml =~ /<?xml/
   rx = Document.new(xml)
   passenger_status[:global_process_count] = XPath.first(rx, '//info/process_count').text || ''
   passenger_status[:global_get_wait_list_size] = XPath.first(rx, '//info/get_wait_list_size').text || ''
-  passenger_status[:'application_active_processes'] = XPath.first(rx, "sum(//process[command = 'Passenger RackApp: #{options[:rack_app_path]}']/sessions)").try(:to_i) || ''
+  passenger_status[:'application_active_processes'] = XPath.first(rx, "sum(//process[command = 'Passenger RubyApp: #{options[:rack_app_path]}']/sessions)").try(:to_i) || ''
   passenger_status[:'application_enabled_process_count'] = XPath.first(rx, "//group[app_root = '#{options[:rack_app_path]}']/enabled_process_count").try(:text) || ''
   passenger_status[:'application_get_wait_list_size'] = XPath.first(rx, "//group[app_root = '#{options[:rack_app_path]}']/get_wait_list_size").try(:text) || ''
-  passenger_status[:'application_processed'] = XPath.first(rx, "sum(//process[command = 'Passenger RackApp: #{options[:rack_app_path]}']/processed)").try(:to_i) || ''
-  passenger_status[:'application_real_memory'] = XPath.first(rx, "sum(//process[command = 'Passenger RackApp: #{options[:rack_app_path]}']/real_memory)") || ''
-  passenger_status[:'application_vmsize'] = XPath.first(rx, "sum(//process[command = 'Passenger RackApp: #{options[:rack_app_path]}']/vmsize)") || ''
+  passenger_status[:'application_processed'] = XPath.first(rx, "sum(//process[command = 'Passenger RubyApp: #{options[:rack_app_path]}']/processed)").try(:to_i) || ''
+  passenger_status[:'application_real_memory'] = XPath.first(rx, "sum(//process[command = 'Passenger RubyApp: #{options[:rack_app_path]}']/real_memory)") || ''
+  passenger_status[:'application_vmsize'] = XPath.first(rx, "sum(//process[command = 'Passenger RubyApp: #{options[:rack_app_path]}']/vmsize)") || ''
   passenger_status.each {|key,val| passenger_status[key] = val.to_i}
   passenger_status[:'system_load'] = Open3.capture3(ENV, "cat /proc/loadavg | awk '{ print $1 }'")[0].try(:to_f) || ''
   passenger_status[:'cpus'] = `cat /proc/cpuinfo | grep processor | wc -l`.to_i
